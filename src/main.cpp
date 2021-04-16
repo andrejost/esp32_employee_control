@@ -11,9 +11,7 @@
 int botao = 4, autorizacao = 0;
 
 String cartao_atual ="";
-String cartoes_registrados[25] = {"" , "", "" , "", "" , "", "" , "", "" , "", "", "" , "", "" , "", "" , "", "" , "", "" , "", "" , "", "", ""};
-String cartao1 = "";
-String cartao2 = "";
+
 
 void novo_cartao();
 int compara_cartao();

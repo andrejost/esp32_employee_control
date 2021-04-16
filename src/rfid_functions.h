@@ -8,6 +8,10 @@
 #define RST_PIN 8
 MFRC522 mfrc522(SS_PIN, RST_PIN);   // Create MFRC522 instance.
 
+String cartoes_registrados[25] = {"" , "", "" , "", "" , "", "" , "", "" , "", "", "" , "", "" , "", "" , "", "" , "", "" , "", "" , "", "", ""};
+String cartao1 = "";
+String cartao2 = "";
+
 /*********************  Função Novo Cartao     *********************************************
  * 
  * Base para registro de novos cartões
