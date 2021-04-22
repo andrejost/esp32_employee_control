@@ -19,11 +19,21 @@ using namespace std;
 //Include file for credentials. In this case, replace credentials.h for credentials_example.h
 #include "credentials.h"
 
+//Library used to work with JSON objects when sending to the Tago.io API. 
+//To identify the variables and values in you device, Tago.io used a JSON Object
+#include <ArduinoJson.h>
+
+//Necessary to work with the ArduinoJSON Library
+//The size of the buffer is limited to 256 as this is the limit of the PubSubClient Library
+StaticJsonDocument<256> MQTTOBJECT;
+
+//Creates an object to send data using MQTT
 WiFiClient espClient;
 
-PubSubClient client(espClient); //lib required for mqtt
+//lib required for mqtt
+PubSubClient client(espClient); 
 
-//MQTT Callback Handler
+//MQTT Callback Handler. Not used in this example, but can be used to handle incoming MQTT messages
 void callback(char* topic, byte* payload, unsigned int length) {
    // handle message arrived
 }
@@ -32,7 +42,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 void setmqtt_server(){
 
-  client.setServer(MQTT_SERVER, MQTT_PORT);//connecting to mqtt server
+  client.setServer(MQTT_SERVER, MQTT_PORT);
 
   client.setCallback(callback);
 
@@ -57,18 +67,23 @@ void start_wifi(){
 
 }
 
-void publish_mqtt(String payload){
+void publish_mqtt(String rfid_tag){
 
-  //Used to convert the payload to Char  
-  char* char_arr;
-  char_arr = &payload[0];
-  cout << char_arr;
-
-  if (client.connect("esp32rfid", MQTT_USER, MQTT_PASSWORD)){
+  //You need to create a variable to concatenate the Data and format the JSON Object
+  char message[256];
+  
+  //Variables for the RFID TAG and Card Name
+  MQTTOBJECT["variable"] = "rfid_tag";
+  MQTTOBJECT["value"] = rfid_tag;
+  serializeJson(MQTTOBJECT, message);  
+          
+  if (client.connect("12345", MQTT_USER, MQTT_PASSWORD)){
 
     Serial.println("Connected to MQTT Server!");
-    //This library does not handle the MQTT messages in String format, so it needs to be converted to char
-    client.publish("rfid_tag",char_arr);
+
+    if(client.publish(MQTT_TOPIC, message)){
+      Serial.println("MQTT Data sent successfully !");
+    };
 
   };
 

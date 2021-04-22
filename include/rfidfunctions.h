@@ -1,21 +1,25 @@
 #ifndef RFIDFUNCTIONS.h
 #define RFIDFUNCTIONS.h
 
+#include <string>
+
 //MFRC522 Library
-#include <MFRC522.h>
+//#include <MFRC522.h>
 
 //MQTT Library to connect to Tago.io using MQTT
-#include <PubSubClient.h>
+// #include <PubSubClient.h>
 
 //Reference to the connections files where all connections to Wifi and MQTT will stay
 #include "connections.h"
 
 //Pins for the MFRC component and button
-#define SS_PIN 9
-#define RST_PIN 8
-MFRC522 mfrc522(SS_PIN, RST_PIN);   // Create MFRC522 instance.
+//Pin 21 used in SS_PIN is the SDA Pin
+#define SS_PIN 21
+//Pin 22 used in RST_PIN is the Reset Pin
+#define RST_PIN 22
+// Create MFRC522 instance.
+MFRC522 mfrc522(SS_PIN, RST_PIN);   
 
-String cartoes_registrados[25] = {"" , "", "" , "", "" , "", "" , "", "" , "", "", "" , "", "" , "", "" , "", "" , "", "" , "", "" , "", "", ""};
 String cartao1 = "";
 String cartao2 = "";
 String cartao_atual ="";
@@ -35,38 +39,41 @@ void novo_cartao(){
   
   Serial.println("MODO REGISTRO");
   
-  if (cartoes_registrados[1] == "")
+  if (cartao1[1] == '\0') //Checks whether there is a card already registered in the array
   {
+        
     // Look for new cards
       if ( ! mfrc522.PICC_IsNewCardPresent()) 
-        {
-          return;
-        }
+      {          
+        return;
+      }
     // Select one of the cards
       if ( ! mfrc522.PICC_ReadCardSerial()) 
-        {
-          return;
-        }
+      {
+        return;
+      }
       for (byte i = 0; i < mfrc522.uid.size; i++) 
-        {
+      {
         //Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
         //Serial.print(mfrc522.uid.uidByte[i], HEX);
         content1.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " "));
         content1.concat(String(mfrc522.uid.uidByte[i], HEX));
-        }
-    
-        //Serial.println(content1);
-            
-        for (int i = 1; i < 14; i++){
-          cartoes_registrados[i] = content1[i];
-          cartao1.concat(cartoes_registrados[i]);
-        }          
-                                
-        Serial.println("NOVO CARTÃO REGISTRADO NA POSIÇÃO 1: " + cartao1);
-
       }
-      else{
-          cartao2 ="";
+    
+      Serial.println(content1);
+            
+      for (int i = 1; i < 12; i++)
+      {
+        // cartoes_registrados[i] = content1[i];
+        cartao1.concat(content1[i]);
+      }          
+
+    Serial.println("NOVO CARTÃO REGISTRADO NA POSIÇÃO 1: " + cartao1);
+  
+  }
+  else if (cartao2[1] == '\0') //Checks whether there is a card already registered in the array
+  {
+          
           // Look for new cards
           if ( ! mfrc522.PICC_IsNewCardPresent()) 
           {
@@ -86,14 +93,15 @@ void novo_cartao(){
             content1.concat(String(mfrc522.uid.uidByte[i], HEX));
         
           }
-            //Serial.println(content1);
             
-            for (int i = 14; i < 26; i++){
-              cartoes_registrados[i] = content1[i-13];
-              cartao2.concat(cartoes_registrados[i]);
-            }          
-                                
-            Serial.println("NOVO CARTÃO REGISTRADO NA POSIÇÃO 2: " + cartao2);
+            Serial.println(content1);
+            
+          for (int i = 1; i < 12; i++)
+          {
+            cartao2.concat(content1[i]);
+          }          
+     
+          Serial.println("NOVO CARTÃO REGISTRADO NA POSIÇÃO 2: " + cartao2);
                         
   }
         
@@ -118,7 +126,7 @@ void base_cartao(){
 
 void valida_cartao() {
 
-    /*************************** Valida Cartão lido agora  - Início **************/
+  /*************************** Valida Cartão lido agora  - Início **************/
   String content2 ="";
   if ( ! mfrc522.PICC_IsNewCardPresent()) 
   {
@@ -143,41 +151,32 @@ void valida_cartao() {
   for (int i = 1; i < 12; i++){
     cartao_atual.concat(content2[i]);
   }          
-  /*************************** Valida Cartão lido agora  - Fim *****************/
-
+  
   /*************************** Compara cartão com a base atual - Início ********/
-  if (cartao_atual.equals(cartao1))
+  if (cartao_atual.equals(cartao1) | cartao_atual.equals(cartao2))
   {
     Serial.println("*********************************************************");
-    Serial.println("******** Autorizado - Cartão 1! *************************");
+    Serial.println("******** Autorizado *************************************");
     Serial.println("*********************************************************");
+    Serial.println("** Cartão Inserido: " + cartao_atual + " *************************");
+    Serial.println("*********************************************************");
+    
     delay(500);
 
-    publish_mqtt("Cartao 1");
-
-    cartao_atual = "";
-  }
-  else if (cartao_atual.equals(cartao2))
-  {
-    Serial.println("*********************************************************");
-    Serial.println("******** Autorizado - Cartão 2! *************************");
-    Serial.println("*********************************************************");
-    delay(500);
-
-    publish_mqtt("Cartao 2");
-      
+    publish_mqtt(cartao_atual);
+    
     cartao_atual = "";
   }
   else {
-    delay(2000);
+    delay(100);
     Serial.println("*********************************************************");
     Serial.println("Acesso não autorizado - Por favor entre com cartão válido");
     Serial.println("*********************************************************");
-    delay(2000);
+
+
     cartao_atual = "";
   }
-  /*************************** Compara cartão com a base atual - Fim ************/
-      
+        
   mfrc522.PICC_HaltA();  
   mfrc522.PCD_StopCrypto1();    
 
